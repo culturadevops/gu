@@ -3,6 +3,7 @@ package exe
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"os/exec"
 
@@ -61,6 +62,7 @@ func (i *Jexe) Command(exectuble string, withArgument bool) error {
 	if i.FinalPath != "" {
 		i.Cmd.Dir = i.FinalPath
 	}
+	fmt.Println(i.Cmd)
 	return err
 }
 
