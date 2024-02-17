@@ -55,7 +55,19 @@ func (i *Jjson) ReadJsonFile(jsonFileName string, Struct interface{}) error {
 	}
 	return nil
 }
+func (i *Jjson) SaveToFile(fileName string, data interface{}) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
 
+	// Escribe los datos modificados de vuelta al archivo
+	if err := os.WriteFile(fileName, jsonData, 0644); err != nil {
+		return err
+	}
+	return nil
+
+}
 func (i *Jjson) UpdateAValueOnFileJson(archivo string, KeyAbuscar string, valorAremplazar interface{}) error {
 	// Lee el archivo JSON
 	data, err := os.ReadFile(archivo)
@@ -76,13 +88,8 @@ func (i *Jjson) UpdateAValueOnFileJson(archivo string, KeyAbuscar string, valorA
 		jsonData[KeyAbuscar] = valorAremplazar
 
 		// Codifica el mapa modificado de vuelta a JSON
-		modifiedData, err := json.MarshalIndent(jsonData, "", "  ")
+		err := i.SaveToFile(archivo, jsonData)
 		if err != nil {
-			return err
-		}
-
-		// Escribe los datos modificados de vuelta al archivo
-		if err := os.WriteFile(archivo, modifiedData, 0644); err != nil {
 			return err
 		}
 		return nil

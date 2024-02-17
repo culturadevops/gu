@@ -27,6 +27,37 @@ func (i *Jfile) ReadDictionaryFile(dictionary string) ([]string, error) {
 	return passDict, nil
 }
 
+/*dado un archivo con variable=valor el devuelve un map con [variable]= valor*/
+func (i *Jfile) LeerArchivoYCrearMapa(archivo string, separador string) (map[string]string, error) {
+	// Abre el archivo
+	file, err := os.Open(archivo)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Crea un mapa para almacenar los datos
+	datos := make(map[string]string)
+
+	// Crea un scanner para leer el archivo línea por línea
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		// Divide cada línea del archivo en nombre y valor usando "=" como delimitador
+		partes := strings.Split(scanner.Text(), separador)
+		if len(partes) == 2 {
+			// Agrega la entrada al mapa
+			datos[strings.TrimSpace(partes[0])] = strings.TrimSpace(partes[1])
+		}
+	}
+
+	// Verifica errores durante el escaneo del archivo
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return datos, nil
+}
+
 /* lee un archivo y luego lo copia a otro
  */
 func (i *Jfile) ReadAndCopy(srcFileDir string, DestFileDir string) error {

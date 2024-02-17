@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	"os/exec"
 
 	"github.com/culturadevops/gu/HandleError"
+	"github.com/culturadevops/gu/StackError"
 )
 
 type Jexe struct {
@@ -16,9 +18,11 @@ type Jexe struct {
 	Executable string
 	FinalPath  string
 	MapError   *HandleError.HandleError
+	StackError *StackError.StackError
 }
 
 func New(Executable, FinalPath string, newMapError ...*HandleError.HandleError) *Jexe {
+	StackError := StackError.New("jexe")
 	if len(newMapError) > 0 {
 		return &Jexe{
 			Arg:        []string{},
@@ -26,25 +30,26 @@ func New(Executable, FinalPath string, newMapError ...*HandleError.HandleError) 
 			Executable: Executable,
 			FinalPath:  FinalPath,
 			MapError:   newMapError[0],
+			StackError: StackError,
 		}
 	}
 
-	MapError := HandleError.New(errors.New("No existe ese codigo"))
-	MapError.SetError("NoExecutable", errors.New("Falta Nombre del Ejecutable"))
+	MapError := HandleError.New(StackError.AddInternalError(errors.New("No existe ese codigo")))
+	MapError.SetError("NoExecutable", StackError.AddInternalError(errors.New("Falta Nombre del Ejecutable")))
 	return &Jexe{
 		Arg:        []string{},
 		Cmd:        &exec.Cmd{},
 		Executable: Executable,
 		FinalPath:  FinalPath,
-
-		MapError: MapError,
+		MapError:   MapError,
+		StackError: StackError,
 	}
 }
 
 func (i *Jexe) CommandInternal(withArgument bool) error {
 	Err := i.Command(i.Executable, withArgument)
 	if Err != nil {
-		return Err
+		return i.StackError.AddExternalError(Err)
 	}
 	return nil
 }
@@ -100,7 +105,12 @@ func (i *Jexe) Run(data ...string) (string, string, error) {
 	i.Cmd.Stderr = &stderr
 
 	err := i.Cmd.Run()
-	return string(stdout.Bytes()), string(stderr.Bytes()), err
+	if err != nil {
+
+		err1 := errors.New(fmt.Sprintf("%v:%v", strings.TrimRight(string(stderr.Bytes()), "\n"), err.Error()))
+		return string(stdout.Bytes()), string(stderr.Bytes()), i.StackError.AddExternalError(err1)
+	}
+	return string(stdout.Bytes()), string(stderr.Bytes()), nil
 }
 
 func (i *Jexe) AddKeyAndValue(Index string, Value string) []string {
